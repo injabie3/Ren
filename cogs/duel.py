@@ -481,7 +481,7 @@ class Duel:
                 place += 1
             if highscore:
                 if len(highscore) < 1985:
-                    await self.bot.say("```py\n" + highscore + "```")
+                    await self.bot.say("```py\n" + highscore + "```" + "\nFull rankings at https://discord.injabie3.moe/duels")
                 else:
                     await self.bot.say("The leaderboard is too big to be displayed. Try with a lower <top> parameter.")
         else:
@@ -610,8 +610,17 @@ class Duel:
                 msg = 'After %d rounds, the duel ends in a tie!' % (i + 1)
 
             await self.bot.say(msg)
-            self.bot.dispatch('duel_completion', channel=channel,
-                              players=(p1, p2), victor=victor)
+            #self.bot.dispatch('duel_completion', channel=channel,
+            #                 players=(p1, p2), victor=victor)
+
+            # Embed to display duel statistics - Injabie3 2017-01-26
+            info_p1 = "**Wins**: {}\n**Losses**: {}\n**Draws**: {}\n**W/L Difference**: {}".format(p1.wins, p1.losses, p1.draws, p1.wins-p1.losses);
+            info_p2 = "**Wins**: {}\n**Losses**: {}\n**Draws**: {}\n**W/L Difference**: {}".format(p2.wins, p2.losses, p2.draws, p2.wins-p2.losses);
+            embed = discord.Embed(colour=discord.Colour.red())
+            embed.add_field(name=p1, value=info_p1)
+            embed.add_field(name=p2, value=info_p2)
+            embed.set_footer(text="Duel Statistics")
+            await self.bot.say(content="",embed=embed)
         except:
             raise
         finally:
