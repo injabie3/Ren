@@ -599,10 +599,10 @@ class Duel:
                 loser.losses += 1
                 msg = 'After {0} rounds, {1.mention} wins with ' \
                     '{1.hp} HP!'.format(i + 1, victor)
-                msg += '\nStats: '
-                for p, end in ((victor, '; '), (loser, '.')):
-                    msg += '{0} has {0.wins} wins, {0.losses} losses, ' \
-                        '{0.draws} draws{1}'.format(p, end)
+                #msg += '\nStats: '
+                #for p, end in ((victor, '; '), (loser, '.')):
+                #    msg += '{0} has {0.wins} wins, {0.losses} losses, ' \
+                #        '{0.draws} draws{1}'.format(p, end)
             else:
                 victor = None
                 for p in [p1, p2]:
@@ -610,8 +610,8 @@ class Duel:
                 msg = 'After %d rounds, the duel ends in a tie!' % (i + 1)
 
             await self.bot.say(msg)
-            #self.bot.dispatch('duel_completion', channel=channel,
-            #                 players=(p1, p2), victor=victor)
+            self.bot.dispatch('duel_completion', channel=channel,
+                             players=(p1, p2), victor=victor)
 
             # Embed to display duel statistics - Injabie3 2017-01-26
             info_p1 = "**Wins**: {}\n**Losses**: {}\n**Draws**: {}\n**W/L Difference**: {}".format(p1.wins, p1.losses, p1.draws, p1.wins-p1.losses);
