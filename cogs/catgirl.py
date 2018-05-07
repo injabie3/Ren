@@ -2,9 +2,13 @@ import discord
 from discord.ext import commands
 from __main__ import send_cmd_help
 from cogs.utils.dataIO import dataIO
+from .utils import checks
 import asyncio #Used for task loop.
 import os #Used to create folder at first load.
 import random #Used for selecting random catgirls.
+import pixivpy3
+import boto3
+import urllib.parse
 
 #Global variables
 JSON_mainKey = "catgirls" #Key for JSON files.
@@ -21,6 +25,14 @@ def checkFolder():
     if not os.path.exists(saveFolder):
         print("Creating " + saveFolder + " folder...")
         os.makedirs(saveFolder)
+    
+    if not os.path.exists(saveFolder+"pending"):
+        print("Creating " + saveFolder+"pending folder...")
+        os.makedirs(saveFolder+"pending")
+    
+    if not os.path.exists(saveFolder+"to-upload"):
+        print("Creating " + saveFolder+"to-upload folder...")
+        os.makedirs(saveFolder+"to-upload")
 
 def checkFiles():
     """Used to initialize an empty database at first startup"""
@@ -46,6 +58,16 @@ def checkFiles():
     if not dataIO.is_valid_json(f):
         print("Creating default catgirl links-pending.json...")
         dataIO.save_json(f, empty)
+
+    f = saveFolder + "links-pending-pixiv.json"
+    if not dataIO.is_valid_json(f):
+        print("Creating default catgirl links-pending-pixiv.json...")
+        dataIO.save_json(f, empty)        
+        
+    f = saveFolder + "settings.json"
+    if not dataIO.is_valid_json(f):
+        print("Creating default settings.json...")
+        dataIO.save_json(f, empty)
             
 class Catgirl_beta:
     """Display cute nyaas~"""
@@ -63,11 +85,14 @@ class Catgirl_beta:
         #List of pending catgirls waiting to be added.
         self.filepath_pending = saveFolder + "links-pending.json"
         
+        self.filepath_pending_pixiv = saveFolder + "links-pending-pixiv.json"
+        
         #Catgirls
         self.pictures_local = dataIO.load_json(self.filepath_local)
         self.pictures_localx10 = dataIO.load_json(self.filepath_localx10)
         self.pictures_web = dataIO.load_json(self.filepath_web)
         self.pictures_pending = dataIO.load_json(self.filepath_pending)
+        self.pictures_pending_pixiv = dataIO.load_json(self.filepath_pending_pixiv)
         
         #Trap (kek)
         self.catgirls_local_trap = [];
@@ -97,8 +122,10 @@ class Catgirl_beta:
         
     def __init__(self, bot):
         self.bot = bot
+        self.pixivSession = None
         checkFolder()
         checkFiles()
+        self.settings = dataIO.load_json(saveFolder + "settings.json")
         self.refreshDatabase()
         
     #[p]catgirl
@@ -356,17 +383,43 @@ class Catgirl_beta:
         link          The full URL to an image, use \" \" around the link.
         description   Description of character (optional)
         """
-    
+        message = ":hourglass_flowing_sand: Please wait..."
+        messageID = await self.bot.say(message)
+        
         temp = {}
         temp["url"] = link
         temp["character"] = description
         temp["submitter"] = ctx.message.author.name
-        temp["id"] = None
-        temp["is_pixiv"] = False
         
-    
-        self.pictures_pending[JSON_mainKey].append(temp)
-        dataIO.save_json(self.filepath_pending, self.pictures_pending)
+        parsedURL = urllib.parse.urlparse(link)
+        parameters = dict(urllib.parse.parse_qsl(parsedURL.query))
+        if self.pixivSession is None:
+            await self.bot.say(":warning: Log into pixiv to parse pixiv links!")
+
+        if "pixiv.net" in parsedURL.hostname and self.pixivSession is not None:
+            message = ":hourglass_flowing_sand: Detected a pixiv link, fetching image..."
+            await self.bot.edit_message(messageID, message)
+            
+            workToSave = dict(self.pixivSession.illust_detail(int(parameters["illust_id"])))
+            
+            parsedImageURL = urllib.parse.urlparse(workToSave["illust"]["meta_single_page"]["original_image_url"])
+            temp["url"] = os.path.basename(parsedImageURL.path)
+            temp["title"] = workToSave["illust"]["title"]
+            temp["id"] = workToSave["illust"]["id"]
+            temp["is_pixiv"] = True
+            self.pictures_pending_pixiv[JSON_mainKey].append(temp)
+            
+            self.pixivSession.download(workToSave["illust"]["meta_single_page"]["original_image_url"], prefix='data/lui-cogs/catgirl/pending/')
+            dataIO.save_json(self.filepath_pending_pixiv, self.pictures_pending_pixiv)
+            message = ":white_check_mark: Image fetched."
+            await self.bot.edit_message(messageID, message)
+        else:
+            temp["id"] = None
+            temp["is_pixiv"] = False
+            self.pictures_pending[JSON_mainKey].append(temp)
+            dataIO.save_json(self.filepath_pending, self.pictures_pending)
+        
+        
 
         #Get owner ID.
         owner = discord.utils.get(self.bot.get_all_members(),id=self.bot.settings.owner)
@@ -374,12 +427,59 @@ class Catgirl_beta:
         try:
             await self.bot.send_message(owner, "New catgirl image is pending approval. Please check the list!")
         except discord.errors.InvalidArgument:
-            await self.bot.say("Added, but could not notify owner.")
+            await self.bot.edit_message(messageID, ":negative_squared_cross_mark: Added, but **could not notify owner**!")
         else:
-            await self.bot.say("Added, notified and pending approval. :ok_hand:")
+            await self.bot.edit_message(messageID, ":white_check_mark: Added, notified and pending approval.")
+
                 
-        
-            
+    #[p] nyaa test
+    @_nyaa.command(name='test', pass_context=True, no_pm=False)
+    async def test(self, ctx):
+        """Test parsing the list of pending catgirls."""
+        if self.pixivSession is None:
+            await self.bot.say("Please log into pixiv and try again!")
+            return
+        for item in self.pictures_pending[JSON_mainKey]:
+            parsedURL = urllib.parse.urlparse(item["url"])
+            try:
+                if "pixiv.net" in parsedURL.hostname:
+                    await self.bot.say("This is a pixiv URL: {}".format(parsedURL.geturl()))
+                    await self.bot.say("Here are the query parameters:")
+                    parameters = dict(urllib.parse.parse_qsl(parsedURL.query))
+                    print(parameters)
+                    for key, value in parameters.items():
+                        await self.bot.say("{}: {}".format(key,value))
+                    if "illust_id" in parameters.keys():
+                        #await self.bot.say("Logging into pixiv...")
+                        await self.bot.say("Attempting to retrieve picture from pixiv...")
+                        #await self.bot.say(str(parameters["illust_id"]))
+                        workToSave = dict(self.pixivSession.illust_detail(int(parameters["illust_id"])))
+                        #await self.bot.say(workToSave)
+                        #await self.bot.say(dir(workToSave))
+                        self.pixivSession.download(workToSave["illust"]["meta_single_page"]["original_image_url"], prefix='data/lui-cogs/catgirl/pending/')
+                else:
+                    await self.bot.say("This is not a pixiv URL: {}".format(parsedURL.geturl()))
+            except Exception as e:
+                await self.bot.say("Exception!")
+                await self.bot.say(e)
+    
+    #[p] nyaa login
+    @_nyaa.command(name="login", pass_context=True, no_pm=True)
+    @checks.mod_or_permissions(manage_messages=True)
+    async def login(self, ctx):
+        """Logs into Pixiv (via an iOS API)"""
+        if "pixivuser" not in self.settings.keys() or "pixivpassword" not in self.settings.keys():
+            await self.bot.say("Please set a `pixivuser` and a `pixivpassword` key in your `settings.json`, and try again!")
+            return
+        try:
+            await self.bot.say("Attempting to log into pixiv...")
+            self.pixivSession = pixivpy3.AppPixivAPI()
+            self.pixivSession.login(self.settings["pixivuser"], self.settings["pixivpassword"])
+            await self.bot.say("Logged into pixiv.")
+        except Exception as e:
+            print(e)
+            await self.bot.say("Unable to login, check your console logs!")
+    
     async def _randomize(self):
         """Shuffles images in the list."""
         while self:
