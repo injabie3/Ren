@@ -397,21 +397,22 @@ class Catgirl_beta:
             await self.bot.say(":warning: Log into pixiv to parse pixiv links!")
 
         if "pixiv.net" in parsedURL.hostname and self.pixivSession is not None:
-            message = ":hourglass_flowing_sand: Detected a pixiv link, fetching image..."
+            message = ":hourglass_flowing_sand: Detected a pixiv link, adding to separate list..."
             await self.bot.edit_message(messageID, message)
-            
-            workToSave = dict(self.pixivSession.illust_detail(int(parameters["illust_id"])))
-            
-            parsedImageURL = urllib.parse.urlparse(workToSave["illust"]["meta_single_page"]["original_image_url"])
-            temp["url"] = os.path.basename(parsedImageURL.path)
-            temp["title"] = workToSave["illust"]["title"]
-            temp["id"] = workToSave["illust"]["id"]
+            #
+            #workToSave = dict(self.pixivSession.illust_detail(int(parameters["illust_id"])))
+            #print(str(workToSave))
+            #parsedImageURL = urllib.parse.urlparse(workToSave["illust"]["meta_single_page"]["original_image_url"])
+            temp["url"] = link #os.path.basename(parsedImageURL.path)
+            #temp["title"] = workToSave["illust"]["title"]
+            #temp["id"] = workToSave["illust"]["id"]
+            temp["id"] = None
             temp["is_pixiv"] = True
             self.pictures_pending_pixiv[JSON_mainKey].append(temp)
             
-            self.pixivSession.download(workToSave["illust"]["meta_single_page"]["original_image_url"], prefix='data/lui-cogs/catgirl/pending/')
+            #self.pixivSession.download(workToSave["illust"]["meta_single_page"]["original_image_url"], prefix='data/lui-cogs/catgirl/pending/')
             dataIO.save_json(self.filepath_pending_pixiv, self.pictures_pending_pixiv)
-            message = ":white_check_mark: Image fetched."
+            message = ":white_check_mark: Added."
             await self.bot.edit_message(messageID, message)
         else:
             temp["id"] = None
@@ -432,14 +433,16 @@ class Catgirl_beta:
             await self.bot.edit_message(messageID, ":white_check_mark: Added, notified and pending approval.")
 
                 
-    #[p] nyaa test
-    @_nyaa.command(name='test', pass_context=True, no_pm=False)
+    #[p] nyaa parse
+    @_nyaa.command(name='parse', pass_context=True, no_pm=False)
     async def test(self, ctx):
-        """Test parsing the list of pending catgirls."""
+        """Test parsing the list of pending pixiv catgirls."""
         if self.pixivSession is None:
-            await self.bot.say("Please log into pixiv and try again!")
+            await self.bot.say(":warning: Please log into pixiv and try again!")
             return
-        for item in self.pictures_pending[JSON_mainKey]:
+        for item in self.pictures_pending_pixiv[JSON_mainKey]:
+            if "parsed" in item.keys() and item["parsed"] is True:
+                continue
             parsedURL = urllib.parse.urlparse(item["url"])
             try:
                 if "pixiv.net" in parsedURL.hostname:
@@ -454,15 +457,64 @@ class Catgirl_beta:
                         await self.bot.say("Attempting to retrieve picture from pixiv...")
                         #await self.bot.say(str(parameters["illust_id"]))
                         workToSave = dict(self.pixivSession.illust_detail(int(parameters["illust_id"])))
+                        count = 0
+                        if int(workToSave["illust"]["page_count"]) > 1:
+                            for pageToSave in workToSave["illust"]["meta_pages"]:
+                                # Use the original one for the first one, and then create a new {} for the subsequent ones.
+                                if count == 0:
+                                    
+                                else:
+                                    temp = item
+                                    self.pixivSession.download(pageToSave["image_urls"]["original"], prefix='data/lui-cogs/catgirl/pending/')
+                                    parsedImageURL = urllib.parse.urlparse(pageToSave["image_urls"]["original"])
+                                    temp["url"] = os.path.basename(parsedImageURL.path)
+                                    temp["title"] = workToSave["illust"]["title"]
+                                    temp["id"] = workToSave["illust"]["id"]
+                                    temp["parsed"] = True
+                                    self.pictures_pending_pixiv[JSON_mainKey].append(temp)
+                                count++
+                        else:
+                            self.pixivSession.download(workToSave["illust"]["meta_single_page"]["original_image_url"], prefix='data/lui-cogs/catgirl/pending/')
                         #await self.bot.say(workToSave)
                         #await self.bot.say(dir(workToSave))
-                        self.pixivSession.download(workToSave["illust"]["meta_single_page"]["original_image_url"], prefix='data/lui-cogs/catgirl/pending/')
                 else:
                     await self.bot.say("This is not a pixiv URL: {}".format(parsedURL.geturl()))
             except Exception as e:
                 await self.bot.say("Exception!")
                 await self.bot.say(e)
-    
+    #[p] nyaa debugpixiv
+    @_nyaa.command(name='debugpixiv', pass_context=True, no_pm=False)
+    @checks.serverowner()
+    async def debugpixiv(self, ctx):
+        """Debug the JSON response from pixiv."""
+        if self.pixivSession is None:
+            await self.bot.say(":warning: Please log into pixiv and try again!")
+            return
+        for item in self.pictures_pending_pixiv[JSON_mainKey]:
+            if "parsed" in item.keys() and item["parsed"] is True:
+                continue
+            parsedURL = urllib.parse.urlparse(item["url"])
+            try:
+                if "pixiv.net" in parsedURL.hostname:
+                    await self.bot.say("This is a pixiv URL: {}".format(parsedURL.geturl()))
+                    await self.bot.say("Here are the query parameters:")
+                    parameters = dict(urllib.parse.parse_qsl(parsedURL.query))
+                    print(parameters)
+                    for key, value in parameters.items():
+                        await self.bot.say("{}: {}".format(key,value))
+                    if "illust_id" in parameters.keys():
+                        #await self.bot.say("Logging into pixiv...")
+                        await self.bot.say("Attempting to retrieve picture from pixiv...")
+                        #await self.bot.say(str(parameters["illust_id"]))
+                        workToSave = dict(self.pixivSession.illust_detail(int(parameters["illust_id"])))
+                        await self.bot.say(workToSave)
+                        await self.bot.say(dir(workToSave))
+                else:
+                    await self.bot.say("This is not a pixiv URL: {}".format(parsedURL.geturl()))
+            except Exception as e:
+                await self.bot.say("Exception!")
+                await self.bot.say(e)
+            
     #[p] nyaa login
     @_nyaa.command(name="login", pass_context=True, no_pm=True)
     @checks.mod_or_permissions(manage_messages=True)
