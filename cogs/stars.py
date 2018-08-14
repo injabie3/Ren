@@ -4,8 +4,8 @@
 # DATE LAST MODIFIED: 2017-05-06
 
 # Global variables:
-messageReaction = "ren" #The emoji name you want to use for initiating stars.
-messageReactionCode = "<:ren:303022146513403907>" #The emoji code retrieved by doing \emoji
+messageReaction = "vanime" #The emoji name you want to use for initiating stars.
+messageReactionCode = "<:vanime:478789464777424896>" #The emoji code retrieved by doing \emoji
 #messageReaction = "\N{WHITE MEDIUM STAR}" #Default reaction emoji
 
 from discord.ext import commands
