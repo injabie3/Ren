@@ -485,7 +485,7 @@ class Economy:
             for page in pagify(highscore, shorten_by=12):
             #Adding info site.
                 siteInfo = "\nFull rankings coming soon:tm:"
-                sleepTime = 10
+                sleepTime = 60
                 msgId = await self.bot.say(box(page, lang="py") + siteInfo)
                 await asyncio.sleep(sleepTime)
                 await self.bot.delete_message(msgId)
