@@ -10,7 +10,7 @@ from cogs.utils import checks
 from cogs.utils.chat_formatting import escape_mass_mentions, box
 from cogs.utils.paginator import Pages # For making pages, requires the util!
 
-def check_folders():
+def checkFolders():
     folders = ("data", "data/modcustom/")
     for folder in folders:
         if not os.path.exists(folder):
@@ -18,13 +18,13 @@ def check_folders():
             os.makedirs(folder)
 
 
-def check_files():
-    plonked_perms = {"users": [], "roles": []}
-    override_perms = {"users": [], "roles": []}
+def checkFiles():
+    plonkedPerms = {"users": [], "roles": []}
+    overridePerms = {"users": [], "roles": []}
 
     files = {
-        "plonked_perms.json"      : plonked_perms,
-        "override_perms.json"      : override_perms
+        "plonked_perms.json"      : plonkedPerms,
+        "override_perms.json"      : overridePerms
     }
 
     for filename, value in files.items():
@@ -38,21 +38,21 @@ class ModCustom(object):
 
     def __init__(self, bot):
         self.bot = bot
-        self.override_perms = dataIO.load_json("data/modcustom/override_perms.json")
-        self.plonked_perms = dataIO.load_json("data/modcustom/plonked_perms.json")
+        self.overridePerms = dataIO.load_json("data/modcustom/override_perms.json")
+        self.plonkedPerms = dataIO.load_json("data/modcustom/plonked_perms.json")
 
-    def is_plonked(self, server, member): # note: message.server isnt needed
-        if len([x for x in self.plonked_perms["users"] if member.id == x ]) == 0:
+    def isPlonked(self, server, member): # note: message.server isnt needed
+        if len([x for x in self.plonkedPerms["users"] if member.id == x ]) == 0:
             return False
         else:
             return True
 
-    def has_perms(self, server, member):
+    def hasPerms(self, server, member):
         perms = []
         overrides = [] # these roles have higher precedence than blacklist roles
         for role in member.roles:
-            perms += [x for x in self.plonked_perms["roles"] if x in role.name]
-            overrides += [x for x in self.override_perms["roles"] if x in role.name]
+            perms += [x for x in self.plonkedPerms["roles"] if x in role.name]
+            overrides += [x for x in self.overridePerms["roles"] if x in role.name]
 
         if len(perms) == 0: # no blacklisted roles, we good to go
             return True
@@ -77,7 +77,7 @@ class ModCustom(object):
     # [p]plonked users
     @plonked.group(name="users", pass_context=True, no_pm=True)
     @checks.mod_or_permissions()
-    async def user_settings(self, ctx):
+    async def userSettings(self, ctx):
         """Category: change settings for users."""
         if str(ctx.invoked_subcommand).lower() == "plonked users":
             await self.bot.send_cmd_help(ctx)
@@ -85,87 +85,87 @@ class ModCustom(object):
     # [p]plonked roles
     @plonked.group(name="roles", pass_context=True, no_pm=True)
     @checks.mod_or_permissions()
-    async def role_settings(self, ctx):
+    async def roleSettings(self, ctx):
         """Category: change settings for roles."""
         if str(ctx.invoked_subcommand).lower() == "plonked roles":
             await self.bot.send_cmd_help(ctx)
 
-    @user_settings.command(name="add")
-    async def _blacklist_adduser(self, user: discord.Member):
+    @userSettings.command(name="add")
+    async def _blacklistAddUser(self, user: discord.Member):
         """Adds user to bot's blacklist"""
-        if user.id not in self.plonked_perms["users"]:
-            self.plonked_perms["users"].append(user.id)
-            dataIO.save_json("data/modcustom/plonked_perms.json", self.plonked_perms)
+        if user.id not in self.plonkedPerms["users"]:
+            self.plonkedPerms["users"].append(user.id)
+            dataIO.save_json("data/modcustom/plonked_perms.json", self.plonkedPerms)
             await self.bot.say("User has been added to blacklist.")
         else:
             await self.bot.say("User is already blacklisted.")
 
-    @role_settings.command(name="add")
-    async def _blacklist_addrole(self, role: str):
+    @roleSettings.command(name="add")
+    async def _blacklistAddRole(self, role: str):
         """Adds role to bot's blacklist"""
-        if role not in self.plonked_perms["roles"]:
-            self.plonked_perms["roles"].append(role)
-            dataIO.save_json("data/modcustom/plonked_perms.json", self.plonked_perms)
+        if role not in self.plonkedPerms["roles"]:
+            self.plonkedPerms["roles"].append(role)
+            dataIO.save_json("data/modcustom/plonked_perms.json", self.plonkedPerms)
             await self.bot.say("Role has been added to blacklist.")
         else:
             await self.bot.say("Role is already blacklisted.")
 
-    @user_settings.command(name="del", aliases=["remove", "delete", "rm"])
-    async def _blacklist_removeuser(self, user: discord.Member):
+    @userSettings.command(name="del", aliases=["remove", "delete", "rm"])
+    async def _blacklistRemoveUser(self, user: discord.Member):
         """Removes user from bot's blacklist"""
-        if user.id in self.plonked_perms["users"]:
-            self.plonked_perms["users"].remove(user.id)
-            dataIO.save_json("data/modcustom/plonked_perms.json", self.plonked_perms)
+        if user.id in self.plonkedPerms["users"]:
+            self.plonkedPerms["users"].remove(user.id)
+            dataIO.save_json("data/modcustom/plonked_perms.json", self.plonkedPerms)
             await self.bot.say("User has been removed from blacklist.")
         else:
             await self.bot.say("User is not in blacklist.")
 
-    @role_settings.command(name="del", aliases=["delete", "remove", "rm"])
-    async def _blacklist_removerole(self, role: str):
+    @roleSettings.command(name="del", aliases=["delete", "remove", "rm"])
+    async def _blacklistRemoveRole(self, role: str):
         """Removes role from bot's blacklist"""
-        if role in self.plonked_perms["roles"]:
-            self.plonked_perms["roles"].remove(role)
-            dataIO.save_json("data/modcustom/plonked_perms.json", self.plonked_perms)
+        if role in self.plonkedPerms["roles"]:
+            self.plonkedPerms["roles"].remove(role)
+            dataIO.save_json("data/modcustom/plonked_perms.json", self.plonkedPerms)
             await self.bot.say("Role has been removed from blacklist.")
         else:
             await self.bot.say("Role is not in blacklist.")
 
-    @user_settings.command(name="list", aliases=["ls"], pass_context=True)
-    async def _blacklist_listusers(self, ctx):
+    @userSettings.command(name="list", aliases=["ls"], pass_context=True)
+    async def _blacklistListUsers(self, ctx):
         """List users on the bot's blacklist"""
-        if not self.plonked_perms["users"]:
+        if not self.plonkedPerms["users"]:
             await self.bot.say("No users are on the blacklist.")
             return
 
         users = []
-        for uid in self.plonked_perms["users"]:
-            user_obj = ctx.message.server.get_member(uid)
-            if not user_obj:
+        for uid in self.plonkedPerms["users"]:
+            userObj = ctx.message.server.get_member(uid)
+            if not userObj:
                 continue
-            users.append(user_obj.mention)
+            users.append(userObj.mention)
 
         page = Pages(self.bot, message=ctx.message, entries=users)
         page.embed.title = "Blacklisted users in **{}**".format(ctx.message.server.name)
         page.embed.colour = discord.Colour.red()
         await page.paginate()
 
-    @role_settings.command(name="list", aliases=["ls"], pass_context=True)
-    async def _blacklist_listroles(self, ctx):
+    @roleSettings.command(name="list", aliases=["ls"], pass_context=True)
+    async def _blacklistListRoles(self, ctx):
         """List roles on the bot's blacklist"""
-        if not self.plonked_perms["roles"]:
+        if not self.plonkedPerms["roles"]:
             await self.bot.say("No roles are on the blacklist.")
             return
 
-        page = Pages(self.bot, message=ctx.message, entries=self.plonked_perms["roles"])
+        page = Pages(self.bot, message=ctx.message, entries=self.plonkedPerms["roles"])
         page.embed.title = "Blacklisted roles in **{}**".format(ctx.message.server.name)
         page.embed.colour = discord.Colour.red()
         await page.paginate()
 
     @plonked.command(name="clear")
-    async def _blacklist_clear(self):
+    async def _blacklistClear(self):
         """Clears the blacklist"""
-        self.plonked_perms = {"users": [], "roles": []}
-        dataIO.save_json("data/modcustom/plonked_perms.json", self.plonked_perms)
+        self.plonkedPerms = {"users": [], "roles": []}
+        dataIO.save_json("data/modcustom/plonked_perms.json", self.plonkedPerms)
         await self.bot.say("Blacklist is now empty.")
 
     @commands.group(pass_context=True)
@@ -182,7 +182,7 @@ class ModCustom(object):
     # [p]overridden users
     @overridden.group(name="users", pass_context=True, no_pm=True)
     @checks.mod_or_permissions()
-    async def overridden_user_settings(self, ctx):
+    async def overriddenUserSettings(self, ctx):
         """Category: change settings for users."""
         if str(ctx.invoked_subcommand).lower() == "overridden users":
             await self.bot.send_cmd_help(ctx)
@@ -190,101 +190,100 @@ class ModCustom(object):
     # [p]overridden roles
     @overridden.group(name="roles", pass_context=True, no_pm=True)
     @checks.mod_or_permissions()
-    async def overridden_role_settings(self, ctx):
+    async def overriddenRoleSettings(self, ctx):
         """Category: change settings for roles."""
         if str(ctx.invoked_subcommand).lower() == "overridden roles":
             await self.bot.send_cmd_help(ctx)
 
-    @overridden_user_settings.command(name="add")
-    async def _whitelist_adduser(self, user: discord.Member):
+    @overriddenUserSettings.command(name="add")
+    async def _whitelistAddUser(self, user: discord.Member):
         """Adds user to bot's whitelist"""
-        if user.id not in self.override_perms["users"]:
-            if not self.override_perms["users"]:
+        if user.id not in self.overridePerms["users"]:
+            if not self.overridePerms["users"]:
                 msg = ("\nAll users not in whitelist will be ignored (owner, "
                        "admins and mods excluded)")
             else:
                 msg = ""
-            self.override_perms["users"].append(user.id)
-            dataIO.save_json("data/modcustom/override_perms.json", self.override_perms)
+            self.overridePerms["users"].append(user.id)
+            dataIO.save_json("data/modcustom/override_perms.json", self.overridePerms)
             await self.bot.say("User has been added to whitelist." + msg)
         else:
             await self.bot.say("User is already whitelisted.")
 
-    @overridden_role_settings.command(name="add")
-    async def _whitelist_addrole(self, role: str):
+    @overriddenRoleSettings.command(name="add")
+    async def _whitelistAddRole(self, role: str):
         """Adds role to bot's whitelist"""
-        if role not in self.override_perms["roles"]:
-            if not self.override_perms["roles"]:
+        if role not in self.overridePerms["roles"]:
+            if not self.overridePerms["roles"]:
                 msg = ("\nAll roles not in whitelist will be ignored (owner, "
                        "admins and mods excluded)")
             else:
                 msg = ""
-            self.override_perms["roles"].append(role)
-            dataIO.save_json("data/modcustom/override_perms.json", self.override_perms)
+            self.overridePerms["roles"].append(role)
+            dataIO.save_json("data/modcustom/override_perms.json", self.overridePerms)
             await self.bot.say("Role has been added to whitelist." + msg)
         else:
             await self.bot.say("Role is already whitelisted.")
 
-    @overridden_user_settings.command(name="delete", aliases=["remove", "del", "rm"])
-    async def _whitelist_removeuser(self, user: discord.Member):
+    @overriddenUserSettings.command(name="delete", aliases=["remove", "del", "rm"])
+    async def _whitelistRemoveUser(self, user: discord.Member):
         """Removes user from bot's whitelist"""
-        if user.id in self.override_perms["users"]:
-            self.override_perms["users"].remove(user.id)
-            dataIO.save_json("data/modcustom/override_perms.json", self.override_perms)
+        if user.id in self.overridePerms["users"]:
+            self.overridePerms["users"].remove(user.id)
+            dataIO.save_json("data/modcustom/override_perms.json", self.overridePerms)
             await self.bot.say("User has been removed from whitelist.")
         else:
             await self.bot.say("User is not in whitelist.")
 
-    @overridden_role_settings.command(name="delete", aliases=["remove", "del", "rm"])
-    async def _whitelist_removerole(self, role: str):
+    @overriddenRoleSettings.command(name="delete", aliases=["remove", "del", "rm"])
+    async def _whitelistRemoveRole(self, role: str):
         """Adds role to bot's whitelist"""
-        if role in self.override_perms["roles"]:
-            self.override_perms["roles"].remove(role)
-            dataIO.save_json("data/modcustom/override_perms.json", self.override_perms)
+        if role in self.overridePerms["roles"]:
+            self.overridePerms["roles"].remove(role)
+            dataIO.save_json("data/modcustom/override_perms.json", self.overridePerms)
             await self.bot.say("Role has been removed from whitelist.")
         else:
             await self.bot.say("Role is not in whitelist.")
 
-    @overridden_user_settings.command(name="list", aliases=["ls"], pass_context=True)
-    async def _whitelist_listusers(self, ctx):
+    @overriddenUserSettings.command(name="list", aliases=["ls"], pass_context=True)
+    async def _whitelistListUsers(self, ctx):
         """List users on the bot's whitelist"""
-        if not self.override_perms["users"]:
+        if not self.overridePerms["users"]:
             await self.bot.say("No users are on the whitelist.")
             return
 
         users = []
-        for uid in self.override_perms["users"]:
-            user_obj = ctx.message.server.get_member(uid)
-            if not user_obj:
+        for uid in self.overridePerms["users"]:
+            userObj = ctx.message.server.get_member(uid)
+            if not userObj:
                 continue
-            users.append(user_obj.mention)
+            users.append(userObj.mention)
 
         page = Pages(self.bot, message=ctx.message, entries=users)
         page.embed.title = "Whitelisted users in **{}**".format(ctx.message.server.name)
         page.embed.colour = discord.Colour.red()
         await page.paginate()
 
-    @overridden_role_settings.command(name="list", aliases=["ls"], pass_context=True)
-    async def _whitelist_listroles(self, ctx):
+    @overriddenRoleSettings.command(name="list", aliases=["ls"], pass_context=True)
+    async def _whitelistListRoles(self, ctx):
         """List roles on the bot's whitelist"""
-        if not self.override_perms["roles"]:
+        if not self.overridePerms["roles"]:
             await self.bot.say("No roles are on the whitelist.")
             return
 
-        page = Pages(self.bot, message=ctx.message, entries=self.override_perms["roles"])
+        page = Pages(self.bot, message=ctx.message, entries=self.overridePerms["roles"])
         page.embed.title = "Whitelisted roles in **{}**".format(ctx.message.server.name)
         page.embed.colour = discord.Colour.red()
         await page.paginate()
 
     @overridden.command(name="clear")
-    async def _whitelist_clear(self):
+    async def _whitelistClear(self):
         """Clears the whitelist"""
-        self.override_perms = {"users": [], "roles": []}
-        dataIO.save_json("data/modcustom/override_perms.json", self.override_perms)
+        self.overridePerms = {"users": [], "roles": []}
+        dataIO.save_json("data/modcustom/override_perms.json", self.overridePerms)
         await self.bot.say("Whitelist is now empty.")
 
 def setup(bot):
-    check_folders()
-    check_files()
-    n = ModCustom(bot)
-    bot.add_cog(n)
+    checkFolders()
+    checkFiles()
+    bot.add_cog(ModCustom(bot))
