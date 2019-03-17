@@ -1,15 +1,14 @@
-import discord
-from discord.ext import commands
-from .utils.dataIO import dataIO
-from .utils import checks
-from __main__ import send_cmd_help, settings
 from collections import deque, defaultdict
-from cogs.utils.chat_formatting import escape_mass_mentions, box
-from cogs.utils.paginator import Pages # For making pages, requires the util!
 import os
 import re
 import logging
 import asyncio
+import discord
+from discord.ext import commands
+from cogs.utils.dataIO import dataIO
+from cogs.utils import checks
+from cogs.utils.chat_formatting import escape_mass_mentions, box
+from cogs.utils.paginator import Pages # For making pages, requires the util!
 
 def check_folders():
     folders = ("data", "data/modcustom/")
@@ -73,7 +72,7 @@ class ModCustom(object):
         [p]overridden command.
         """
         if ctx.invoked_subcommand is None:
-            await send_cmd_help(ctx)
+            await self.bot.send_cmd_help(ctx)
 
     # [p]plonked users
     @plonked.group(name="users", pass_context=True, no_pm=True)
@@ -81,7 +80,7 @@ class ModCustom(object):
     async def user_settings(self, ctx):
         """Category: change settings for users."""
         if str(ctx.invoked_subcommand).lower() == "plonked users":
-            await send_cmd_help(ctx)
+            await self.bot.send_cmd_help(ctx)
 
     # [p]plonked roles
     @plonked.group(name="roles", pass_context=True, no_pm=True)
@@ -89,7 +88,7 @@ class ModCustom(object):
     async def role_settings(self, ctx):
         """Category: change settings for roles."""
         if str(ctx.invoked_subcommand).lower() == "plonked roles":
-            await send_cmd_help(ctx)
+            await self.bot.send_cmd_help(ctx)
 
     @user_settings.command(name="add")
     async def _blacklist_adduser(self, user: discord.Member):
@@ -178,7 +177,7 @@ class ModCustom(object):
         features of the bot, regardless of their status in the [p]plonked command.
         """
         if ctx.invoked_subcommand is None:
-            await send_cmd_help(ctx)
+            await self.bot.send_cmd_help(ctx)
 
     # [p]overridden users
     @overridden.group(name="users", pass_context=True, no_pm=True)
@@ -186,7 +185,7 @@ class ModCustom(object):
     async def overridden_user_settings(self, ctx):
         """Category: change settings for users."""
         if str(ctx.invoked_subcommand).lower() == "overridden users":
-            await send_cmd_help(ctx)
+            await self.bot.send_cmd_help(ctx)
 
     # [p]overridden roles
     @overridden.group(name="roles", pass_context=True, no_pm=True)
@@ -194,7 +193,7 @@ class ModCustom(object):
     async def overridden_role_settings(self, ctx):
         """Category: change settings for roles."""
         if str(ctx.invoked_subcommand).lower() == "overridden roles":
-            await send_cmd_help(ctx)
+            await self.bot.send_cmd_help(ctx)
 
     @overridden_user_settings.command(name="add")
     async def _whitelist_adduser(self, user: discord.Member):
