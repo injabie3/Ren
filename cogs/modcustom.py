@@ -36,32 +36,33 @@ def check_files():
 
 class ModCustom(object):
     """Custom mod tools for use outside of the standard Ren-bot Framework"""
-    
+
     def __init__(self, bot):
         self.bot = bot
         self.override_perms = dataIO.load_json("data/modcustom/override_perms.json")
         self.plonked_perms = dataIO.load_json("data/modcustom/plonked_perms.json")
-        
+
     def is_plonked(self, server, member): # note: message.server isnt needed
         if len([x for x in self.plonked_perms["users"] if member.id == x ]) == 0:
             return False
         else:
             return True
-    
+
     def has_perms(self, server, member):
         perms = []
         overrides = [] # these roles have higher precedence than blacklist roles
         for role in member.roles:
             perms += [x for x in self.plonked_perms["roles"] if x in role.name]
             overrides += [x for x in self.override_perms["roles"] if x in role.name]
-            
+
         if len(perms) == 0: # no blacklisted roles, we good to go
             return True
-        elif len(perms) != 0 and len(overrides) != 0: # have a blacklisted role, but also have a whitelisted role, good to go
+        elif len(perms) != 0 and len(overrides) != 0:
+            # have a blacklisted role, but also have a whitelisted role, good to go
             return True
         else: # sorry, better luck next time
             return False
-            
+
     @commands.group(pass_context=True)
     @checks.mod_or_permissions(administrator=True)
     async def plonked(self, ctx):
@@ -200,7 +201,8 @@ class ModCustom(object):
         """Adds user to bot's whitelist"""
         if user.id not in self.override_perms["users"]:
             if not self.override_perms["users"]:
-                msg = "\nAll users not in whitelist will be ignored (owner, admins and mods excluded)"
+                msg = ("\nAll users not in whitelist will be ignored (owner, "
+                       "admins and mods excluded)")
             else:
                 msg = ""
             self.override_perms["users"].append(user.id)
@@ -214,7 +216,8 @@ class ModCustom(object):
         """Adds role to bot's whitelist"""
         if role not in self.override_perms["roles"]:
             if not self.override_perms["roles"]:
-                msg = "\nAll roles not in whitelist will be ignored (owner, admins and mods excluded)"
+                msg = ("\nAll roles not in whitelist will be ignored (owner, "
+                       "admins and mods excluded)")
             else:
                 msg = ""
             self.override_perms["roles"].append(role)
@@ -280,7 +283,7 @@ class ModCustom(object):
         self.override_perms = {"users": [], "roles": []}
         dataIO.save_json("data/modcustom/override_perms.json", self.override_perms)
         await self.bot.say("Whitelist is now empty.")
-        
+
 def setup(bot):
     check_folders()
     check_files()
