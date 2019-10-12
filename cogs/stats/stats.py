@@ -13,7 +13,9 @@ from redbot.core.utils import paginator
 
 BASE_MEMBER = \
 {
-    "messageCount": {}
+    "messageCount": {}, # Total number of messages sent, per channel basis.
+    "reactCount": {}, # Total number of reactions made, per channel basis.
+    "serverJoinLeave": {} # key: time since epoch; value: join/leave
 }
 
 BASE_GUILD = \
@@ -90,13 +92,7 @@ class Stats(commands.Cog):
                     self.logger.debug("Current message: %s", msg)
                     await self.config.channel(chan).lastUpdated.set(msg.created_at.
                             timestamp())
-                    if msg.author.bot or not isinstance(msg.author, discord.Member):
-                        continue
-                    async with self.config.member(msg.author).messageCount() as msgCount:
-                        if str(chan.id) not in msgCount.keys():
-                            msgCount[str(chan.id)] = 1
-                        else:
-                            msgCount[str(chan.id)] += 1
+                    self._updateMessageCount(msg)
             except discord.Forbidden:
                 self.logger.error("Permission error! Check traceback", exc_info=True)
 
@@ -121,7 +117,46 @@ class Stats(commands.Cog):
             total += msgs
         await ctx.send("You have sent {} messages on this server!".format(total))
 
+    async def _updateMessageCount(self, msg: discord.Message):
+        """Update message count for a guild member.
+
+        This will +1 the current message count for the user.
+
+        Parameters:
+        -----------
+        msg: discord.Message
+            The message you want to use to update.
+        """
+        if msg.author.bot or not isinstance(msg.author, discord.Member):
+            return
+        async with self.config.member(msg.author).messageCount() as msgCount:
+            if str(msg.channel.id) not in msgCount.keys():
+                msgCount[str(msg.channel.id)] = 1
+            else:
+                msgCount[str(msg.channel.id)] += 1
+
+    async def _updateServerJoinLeave(self, timestamp: datetime, status: str):
+        """Update server join/leave status.
+
+        Parameters:
+        -----------
+        timestamp: datetime.datetime
+            The time when this status change occurred.
+        status: str
+            One of either "join" or "leave".
+
+        Raises:
+        -------
+        ValueError
+            The provided status was invalid.
+        """
+        if status != "join" and status != "leave":
+            raise ValueError("Status should be one of 'join' or 'leave'")
+
+        time
+
     @commands.Cog.listener("on_message")
-    async def messageListener(self, message: discord.Message):
+    async def messageListener(self, msg: discord.Message):
         """Check each message and update the info for the guild member."""
-        pass
+        await self._updateMessageCount(msg)
+        await self.config.channel(msg).lastUpdated.set(msg.created_at.timestamp())
