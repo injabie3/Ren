@@ -30,7 +30,6 @@ class Source(commands.Cog):
             try:
                 attachment = ctx.message.attachments[0].url
             except:
-                #await ctx.send(helpmsg)
                 return
             result = tracemoe.search(attachment.strip("<>"), is_url = True)
             titleEnglish = f'{result.docs[0].title_english}'
@@ -39,16 +38,10 @@ class Source(commands.Cog):
             similarity = float(f'{result.docs[0].similarity}')
             URL = "https://anilist.co/anime/"+anilistID
 
-            #embed = Embed(title=titleEnglish, url=URL)
-            #embed.add_field(name="Episode", value=episode)
-            #embed.add_field(name="Similarity", value=('%.3f'%((similarity)*100)))
             if(similarity < 0.8):
                 await ctx.send("Anime: " + titleEnglish + "\nEpisode: " + episode +"\nWARNING: Similarity less than 80%, result may not be accurate"+ "\n"+URL)
-                #embed.add_field(name="Warning", value="Similarity less than  80%, results may be innacurate")
-                #await ctx.send(embed=embed)
             else:
                 await ctx.send("Anime: " + titleEnglish + "\nSimilarity: " + ('%.3f'%((similarity)*100)) +"%" + "\nEpisode: " + episode + "\n"+URL)
-                #await ctx.send(embed=embed)
         except TooManyRequests:
             await ctx.send("Too many requests sent")
         except EntityTooLarge:
@@ -83,16 +76,10 @@ class Source(commands.Cog):
             similarity = float(f'{result.docs[0].similarity}')
             URL = "https://anilist.co/anime/"+anilistID
 
-            #embed = Embed(title=titleEnglish, url=URL)
-            #embed.add_field(name="Episode", value=episode)
-            #embed.add_field(name="Similarity", value=('%.3f'%((similarity)*100)))
             if(similarity < 0.8):
                 await ctx.send("Anime: " + titleEnglish + "\nEpisode: " + episode +"\nWARNING: Similarity less than 80%, result may not be accurate"+ "\n"+URL)
-                #embed.add_field(name="Warning", value="Similarity less than  80%, results may be innacurate")
-                await ctx.send(embed=embed)
             else:
                 await ctx.send("Anime: " + titleEnglish + "\nSimilarity: " + ('%.3f'%((similarity)*100)) +"%" + "\nEpisode: " + episode + "\n"+URL)
-                #await ctx.send(embed=embed)
         except TooManyRequests:
             await ctx.send("Too many requests sent")
         except EntityTooLarge:
