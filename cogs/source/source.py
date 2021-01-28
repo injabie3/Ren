@@ -45,7 +45,7 @@ class Source(commands.Cog):
             if(similarity < 0.8):
                 await ctx.send("Anime: " + titleEnglish + "\nEpisode: " + episode +"\nWARNING: Similarity less than 80%, result may not be accurate"+ "\n"+URL)
                 #embed.add_field(name="Warning", value="Similarity less than  80%, results may be innacurate")
-                await ctx.send(embed=embed)
+                #await ctx.send(embed=embed)
             else:
                 await ctx.send("Anime: " + titleEnglish + "\nSimilarity: " + ('%.3f'%((similarity)*100)) +"%" + "\nEpisode: " + episode + "\n"+URL)
                 #await ctx.send(embed=embed)
