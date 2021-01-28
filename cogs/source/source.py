@@ -13,8 +13,8 @@ class Source(commands.Cog):
 
 
     #@commands.command()
-    @commands.group()
-    async def source(self, ctx):
+    @commands.group(name="source")
+    async def sourceCommand(self, ctx):
         """
         Looks for source of image
 
@@ -64,7 +64,7 @@ class Source(commands.Cog):
 
 
     #@commands.command()
-    @source.command
+    @sourceCommand.command(name="url")
     async def urlSource(self, ctx, imageURL):
         """
         Looks for source of image
