@@ -5,7 +5,7 @@ Keep track of active members on the server.
 import logging
 import os
 import random
-import MySQLdb  # The use of MySQL is debatable, but will use it to incorporate CMPT 354 stuff.
+import aiomysql  # The use of MySQL is debatable, but will use it to incorporate CMPT 354 stuff.
 import discord
 
 from redbot.core import Config, checks, commands, data_manager
@@ -58,17 +58,17 @@ class Ranks(commands.Cog):
         msg = ":information_source: **Ranks - Leaderboard**\n```"
         rank = 1
         # TODO: Handle case when MySQL settings are not configured.
-        database = MySQLdb.connect(
+        database = await aiomysql.connect(
             host=await self.config.mysqlHost(),
             user=await self.config.mysqlUsername(),
-            passwd=await self.config.mysqlPassword(),
+            password=await self.config.mysqlPassword(),
         )
-        cursor = database.cursor()
-        cursor.execute(
+        cursor = await database.cursor()
+        await cursor.execute(
             "SELECT userid, xp FROM renbot.xp WHERE guildid = "
             f"{ctx.guild.id} order by xp desc limit 20"
         )
-        for row in cursor.fetchall():
+        for row in await cursor.fetchall():
             # row[0]: userID
             # row[1]: xp
             userID = row[0]
@@ -87,7 +87,7 @@ class Ranks(commands.Cog):
             if rank == 11:
                 break
 
-        database.close()
+        await database.ensure_closed()
 
         msg += "```\n Full rankings at https://ren.injabie3.moe/ranks/"
         await ctx.send(msg)
@@ -104,20 +104,20 @@ class Ranks(commands.Cog):
 
         # Execute a MySQL query to order and check.
         # TODO: Handle case when MySQL settings are not configured.
-        database = MySQLdb.connect(
+        database = await aiomysql.connect(
             host=await self.config.mysqlHost(),
             user=await self.config.mysqlUsername(),
-            passwd=await self.config.mysqlPassword(),
+            password=await self.config.mysqlPassword(),
         )
         embed = discord.Embed()
         # Using query code from:
         # https://stackoverflow.com/questions/13566695/select-increment-counter-in-mysql
         # This code is now included in the stored procedure in the database.
-        cursor = database.cursor()
-        cursor.execute("CALL renbot.getUserInfo({},{})".format(str(ctx.guild.id), str(ofUser.id)))
+        cursor = await database.cursor()
+        await cursor.execute("CALL renbot.getUserInfo({},{})".format(str(ctx.guild.id), str(ofUser.id)))
         embed = discord.Embed()
-        data = cursor.fetchone()  # Data from the database.
-        database.close()
+        data = await cursor.fetchone()  # Data from the database.
+        await database.ensure_closed()
 
         try:
             self.logger.info(data)
@@ -294,13 +294,13 @@ class Ranks(commands.Cog):
             self.logger.debug("DB connection is not configured")
             return
 
-        database = MySQLdb.connect(
+        database = await aiomysql.connect(
             host=await self.config.mysqlHost(),
             user=await self.config.mysqlUsername(),
-            passwd=await self.config.mysqlPassword(),
+            password=await self.config.mysqlPassword(),
         )
-        cursor = database.cursor()
-        fetch = cursor.execute(
+        cursor = await database.cursor()
+        fetch = await cursor.execute(
             "SELECT xp from renbot.xp WHERE userid = {0} and "
             "guildid = {1}".format(userID, guild.id)
         )
@@ -308,19 +308,19 @@ class Ranks(commands.Cog):
         currentXP = 0
 
         if fetch != 0:  # This user has past XP that we can add to.
-            result = cursor.fetchall()
+            result = await cursor.fetchall()
             currentXP = result[0][0] + pointsToAdd
             self.logger.debug("%s - old EXP: %s, new EXP: %s", userID, result[0][0], currentXP)
         else:  # New user
             currentXP = pointsToAdd
             self.logger.debug("%s - no EXP, new EXP: %s", userID, currentXP)
 
-        cursor.execute(
+        await cursor.execute(
             "REPLACE INTO renbot.xp (userid, guildid, xp) VALUES "
             f"({userID}, {guild.id}, {currentXP})"
         )
-        database.commit()
-        database.close()
+        await database.commit()
+        await database.ensure_closed()
 
     @commands.Cog.listener("on_message")
     async def checkFlood(self, message):
