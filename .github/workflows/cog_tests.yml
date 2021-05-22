@@ -34,6 +34,9 @@ jobs:
             python -m pip install --upgrade pip
             pip install pytest
             pip install pytest-asyncio
+        - name: Set up Red
+          run: |
+            printf "Test\ny\ny\n1\n" | redbot-setup
         - name: Run tests
           run: |
             pytest cogs/*/test*.py
