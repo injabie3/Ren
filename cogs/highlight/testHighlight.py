@@ -6,7 +6,7 @@ from copy import deepcopy
 
 import pytest
 
-from cogs.highlight import highlight
+from . import highlight
 
 import discord
 
