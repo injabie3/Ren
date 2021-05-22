@@ -74,8 +74,3 @@ async def testTriggeredUpdate(configureRed, messageFactory):
         assert newMessage.created_at == hlCog.lastTriggered[guild.id][channel.id][userId] 
 
         firstTime = False
-    
-
-@pytest.mark.asyncio
-async def testSomeBullshit(configureRed):
-    pass
