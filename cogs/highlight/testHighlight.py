@@ -15,13 +15,14 @@ from redbot.core.bot import Red
 from redbot.core.cli import parse_cli_flags
 
 
+# TODO move fixtures to testlib
 @pytest.fixture()
 def textChannelFactory(guild_factory):
     mockChannel = namedtuple("TextChannel", "id guild")
 
     class TextChannelFactory:
-        def get(self):
-            return mockChannel(1, guild_factory.get())
+        def get(self, channelId=1):
+            return mockChannel(channelId, guild_factory.get())
 
     return TextChannelFactory()
 
@@ -32,9 +33,12 @@ def messageFactory(textChannelFactory):
 
     class MessageFactory:
         def __init__(self):
-            self.channel = textChannelFactory.get()
+            self.channelId = 1
+            self.channel = textChannelFactory.get(channelId=self.channelId)
 
-        def get(self, createdAt=datetime.datetime.now()):
+        def get(self, channelId=1, createdAt=datetime.datetime.now()):
+            if self.channelId != self.channel.id:
+                self.channel = textChannelFactory.get(channelId=self.channelId)
             return mockMessage(1, self.channel.guild, self.channel, createdAt, "Empty")
 
     return MessageFactory()
@@ -50,6 +54,7 @@ def configureRed():
     red = Red(cli_flags=cliFlags, description="Red V3", dm_help=None)
 
 
+# Tests
 @pytest.mark.asyncio
 async def testTriggeredUpdate(configureRed, messageFactory):
     hlCog = highlight.Highlight(red)
@@ -81,3 +86,40 @@ async def testTriggeredUpdate(configureRed, messageFactory):
         assert newMessage.created_at == hlCog.lastTriggered[guild.id][channel.id][userId]
 
         firstTime = False
+
+
+@pytest.mark.asyncio
+async def testTriggeredRecently(configureRed, messageFactory):
+    hlCog = highlight.Highlight(red)
+    triggeredUserId = 1111
+    notTriggeredUserId = 2222
+    timeout = 5
+
+    msgFactory = messageFactory
+    message1 = msgFactory.get()
+    newTime = datetime.datetime.now() + datetime.timedelta(seconds=timeout)
+    # This next message is in same guild, channel, but with an updated timestamp
+    message2 = msgFactory.get(createdAt=newTime)
+    # This next message is in the same guild, different channel
+    msgFactory.channelId = 2
+    message3 = msgFactory.get()
+
+    createdAt = deepcopy(message1.created_at)
+
+    guild = message1.guild
+    channel = message1.channel
+
+    # Sanity checks
+    assert message1.guild == message2.guild
+
+    hlCog._triggeredUpdate(message1, triggeredUserId)
+    assert hlCog._triggeredRecently(message1, triggeredUserId)
+    assert hlCog._triggeredRecently(message2, triggeredUserId, timeout=timeout + 1)
+    assert not hlCog._triggeredRecently(message2, triggeredUserId, timeout=timeout)
+    assert not hlCog._triggeredRecently(message2, notTriggeredUserId)
+
+    for seconds in range(0, 100):
+        # Test a range of timeout values to make sure different channel IDs report not
+        # triggered recently
+        assert not hlCog._triggeredRecently(message3, triggeredUserId, timeout=seconds)
+        assert not hlCog._triggeredRecently(message3, notTriggeredUserId, timeout=seconds)
