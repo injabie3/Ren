@@ -715,10 +715,14 @@ class Highlight(commands.Cog):
             self.logger.error(error)
         msgContext = sorted(msgs, key=lambda r: r.created_at)
         msgUrl = message.jump_url
-        notifyMsg = (
-            "In #{1.channel.name}, you were mentioned with highlight word "
-            "**{0}**:".format(word, message)
-        )
+        if isinstance(message.channel, discord.TextChannel):
+            notifyMsg = (
+                f"In #{message.channel.name}, you were mentioned with highlight word "
+                f"**{word}**:"
+            )
+        else:
+            notifyMsg = f"You were mentioned with highlight word **{word}**"
+
         embedMsg = ""
         msgStillThere = False
         for msg in msgContext:
