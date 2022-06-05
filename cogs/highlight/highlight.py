@@ -618,6 +618,8 @@ class Highlight(commands.Cog):
     ):
         """Updates the last time a user had their words triggered in a channel.
 
+        This sets self.lastTriggered[sid][cid][uid] to the specified datetime.
+
         Parameters:
         -----------
         channel: discord.TextChannel
@@ -626,10 +628,6 @@ class Highlight(commands.Cog):
             The user that we wish to update.
         timestamp: datetime.datetime
             The timestamp we wish to update.
-
-        Returns:
-        --------
-        None, updates self.lastTriggered[sid][cid][uid] with the newest datetime.
         """
         sid = channel.guild.id
         cid = channel.id
