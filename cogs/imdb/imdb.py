@@ -50,7 +50,6 @@ class Imdb(BaseCog):
 
         # Loop and ask for more information and build embed
         for game in results:
-
             # Queries api for a movie information
             async with aiohttp.ClientSession() as session:
                 async with session.post(

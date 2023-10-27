@@ -28,7 +28,6 @@ class FakePayload:
 @dataclass
 class StarboardEntry:
     def __init__(self, **kwargs):
-
         super().__init__()
         self.name: str = kwargs.get("name")
         self.guild: int = kwargs.get("guild", None)

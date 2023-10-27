@@ -139,7 +139,6 @@ log = logging.getLogger("red.jumper-plugins.casino")
 
 
 class Database:
-
     config: Config = Config.get_conf(_DataObj, 5074395001, force_registration=True)
 
     def __init__(self):

@@ -1061,7 +1061,6 @@ class Membership(Database):
             await self.ctx.send(_("Deletion canceled."))
 
     async def creator(self):
-
         await self.ctx.send(
             _(
                 "You are about to create a new membership. You may exit this "
